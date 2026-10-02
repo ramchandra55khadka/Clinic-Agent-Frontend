@@ -20,7 +20,7 @@ import {
 import { Avatar, Badge } from "@/components/ui";
 import { ADMIN_ROLES, CLINIC_STAFF_ROLES, PATIENT_ROLE, STAFF_ROLE, roleLabel } from "@/lib/roles";
 import type { UserRole } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, displayName } from "@/lib/utils";
 
 /**
  * Navigation, filtered by role. Patients see their own journey; clinic staff and
@@ -125,9 +125,9 @@ export function SiteHeader() {
                 aria-expanded={menuOpen}
                 className="flex items-center gap-2 rounded-full border border-line py-1 pl-1 pr-2 transition hover:bg-surface-muted"
               >
-                <Avatar name={user.full_name} imageUrl={user.profile_photo_url} className="h-7 w-7 text-[10px]" />
+                <Avatar name={displayName(user)} imageUrl={user.photo_url} className="h-7 w-7 text-[10px]" />
                 <span className="hidden max-w-28 truncate text-xs font-medium sm:block">
-                  {user.full_name}
+                  {displayName(user)}
                 </span>
                 <IconChevronDown className="h-3.5 w-3.5 text-muted" />
               </button>
@@ -135,15 +135,15 @@ export function SiteHeader() {
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 top-[calc(100%+8px)] w-64 rounded-2xl border border-line bg-surface p-2 shadow-lg"
+                  className="absolute right-0 top-[calc(100%+8px)] w-64 rounded-lg border border-line bg-surface p-2 shadow-lg"
                 >
-                  <div className="rounded-xl px-3 py-2.5">
+                  <div className="rounded-lg px-3 py-2.5">
                     <div className="flex items-center gap-3">
-                      <Avatar name={user.full_name} imageUrl={user.profile_photo_url} className="h-10 w-10" />
+                      <Avatar name={displayName(user)} imageUrl={user.photo_url} className="h-10 w-10" />
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{user.full_name}</p>
-                    <p className="mt-0.5 truncate text-xs text-muted">{user.email}</p>
-                    <Badge tone="brand" className="mt-2">
+                        <p className="truncate text-sm font-medium">{displayName(user)}</p>
+                        <p className="mt-0.5 truncate text-xs text-muted">{user.email}</p>
+                        <Badge tone="brand" className="mt-2">
                           {roleLabel(user.role)}
                         </Badge>
                       </div>
@@ -154,7 +154,7 @@ export function SiteHeader() {
                     href="/profile"
                     role="menuitem"
                     onClick={() => setMenuOpen(false)}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-foreground transition hover:bg-surface-muted"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-surface-muted"
                   >
                     <IconSettings className="h-4 w-4" />
                     Edit profile
@@ -166,7 +166,7 @@ export function SiteHeader() {
                       setMenuOpen(false);
                       void logout();
                     }}
-                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
                   >
                     <IconLogout className="h-4 w-4" />
                     Sign out

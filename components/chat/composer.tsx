@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import { IconSend } from "@/components/icons";
+
 const QUICK_PROMPTS = [
   "Book an appointment for me",
   "Book doctor id 1 tomorrow at 10 AM",
@@ -33,14 +35,14 @@ export function Composer({
             type="button"
             disabled={busy}
             onClick={() => onSend(prompt)}
-            className="shrink-0 rounded-full border border-line bg-surface px-3 py-1.5 text-xs text-muted transition hover:bg-surface-muted hover:text-foreground disabled:opacity-50"
+            className="shrink-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-muted transition hover:bg-surface-muted hover:text-foreground disabled:opacity-50"
           >
             {prompt}
           </button>
         ))}
       </div>
 
-      <div className="flex items-end gap-2 rounded-3xl border border-line bg-surface p-2 shadow-sm focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-accent-100 dark:focus-within:ring-accent-600/20">
+      <div className="flex items-end gap-2 rounded-lg border border-line bg-surface p-2 shadow-sm focus-within:border-accent-500 focus-within:ring-2 focus-within:ring-accent-100 dark:focus-within:ring-accent-600/20">
         <textarea
           value={value}
           onChange={(event) => setValue(event.target.value)}
@@ -59,9 +61,9 @@ export function Composer({
           onClick={submit}
           disabled={busy || value.trim().length === 0}
           aria-label="Send message"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-600 text-white transition hover:bg-accent-600/90 disabled:cursor-not-allowed disabled:bg-muted/40"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-600 text-white transition hover:bg-accent-600/90 disabled:cursor-not-allowed disabled:bg-muted/40"
         >
-          ↑
+          <IconSend className="h-4 w-4" />
         </button>
       </div>
     </div>

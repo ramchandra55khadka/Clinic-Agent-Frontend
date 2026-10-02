@@ -21,7 +21,7 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { createUser, deleteUser, listUsers, setUserActive, updateUserRole } from "@/lib/api";
 import { roleLabel } from "@/lib/roles";
 import type { AuthUser, ManagedUserInput, UserRole } from "@/lib/types";
-import { cn, errorMessage, isValidEmail } from "@/lib/utils";
+import { cn, displayName, errorMessage, isValidEmail } from "@/lib/utils";
 
 const ROLE_OPTIONS: UserRole[] = ["patient", "staff", "admin"];
 
@@ -41,7 +41,8 @@ const ROLE_TONES: Record<UserRole, "brand" | "success" | "neutral"> = {
 };
 
 interface CreateForm {
-  full_name: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone: string;
   password: string;
@@ -49,7 +50,8 @@ interface CreateForm {
 }
 
 const EMPTY_FORM: CreateForm = {
-  full_name: "",
+  first_name: "",
+  last_name: "",
   email: "",
   phone: "",
   password: "",
@@ -109,7 +111,7 @@ export function UsersView() {
     const filtered = filter === "all" ? rows : rows.filter((row) => row.role === filter);
     return [...filtered].sort((left, right) => {
       if (left.is_active !== right.is_active) return left.is_active ? -1 : 1;
-      return left.full_name.localeCompare(right.full_name);
+      return displayName(left).localeCompare(displayName(right));
     });
   }, [users, filter]);
 
@@ -140,7 +142,7 @@ export function UsersView() {
       const updated = await updateUserRole(target.id, role);
       replaceUser(updated);
       setNotice(
-        `${updated.full_name} is now ${roleLabel(updated.role)}. Their other sessions were signed out.`,
+        `${displayName(updated)} is now ${roleLabel(updated.role)}. Their other sessions were signed out.`,
       );
     } catch (cause) {
       setActionError(errorMessage(cause));
@@ -158,8 +160,8 @@ export function UsersView() {
       replaceUser(updated);
       setNotice(
         updated.is_active
-          ? `${updated.full_name} can sign in again.`
-          : `${updated.full_name} was deactivated and signed out everywhere.`,
+          ? `${displayName(updated)} can sign in again.`
+          : `${displayName(updated)} was deactivated and signed out everywhere.`,
       );
     } catch (cause) {
       setActionError(errorMessage(cause));
@@ -170,7 +172,7 @@ export function UsersView() {
 
   async function handleDeleteAccount(target: AuthUser) {
     const confirmed = window.confirm(
-      `Permanently delete ${target.full_name}? This removes the account and cannot be undone.`,
+      `Permanently delete ${displayName(target)}? This removes the account and cannot be undone.`,
     );
     if (!confirmed) return;
 
@@ -180,7 +182,7 @@ export function UsersView() {
     try {
       await deleteUser(target.id);
       setUsers((rows) => (rows ?? []).filter((row) => row.id !== target.id));
-      setNotice(`${target.full_name} was permanently deleted.`);
+      setNotice(`${displayName(target)} was permanently deleted.`);
     } catch (cause) {
       setActionError(errorMessage(cause));
     } finally {
@@ -189,21 +191,23 @@ export function UsersView() {
   }
 
   async function handleCreate() {
-    const fullName = form.full_name.trim();
+    const firstName = form.first_name.trim();
+    const lastName = form.last_name.trim();
     const email = form.email.trim();
 
-    if (fullName.length < 2) return setFormError("Please enter the person's full name.");
+    if (!firstName) return setFormError("Please enter the person's first name.");
     if (!isValidEmail(email)) return setFormError("Please enter a valid work email address.");
     if (form.password.length < 8) {
       return setFormError("The password must be at least 8 characters long.");
     }
 
     const payload: ManagedUserInput = {
-      full_name: fullName,
+      first_name: firstName,
       email,
       password: form.password,
       role: form.role,
     };
+    if (lastName) payload.last_name = lastName;
     const phone = form.phone.trim();
     if (phone) payload.phone = phone;
 
@@ -216,7 +220,7 @@ export function UsersView() {
       setForm(EMPTY_FORM);
       setFormOpen(false);
       setNotice(
-        `${created.full_name} was added as ${roleLabel(created.role)}. Share the password with them securely.`,
+        `${displayName(created)} was added as ${roleLabel(created.role)}. Share the password with them securely.`,
       );
     } catch (cause) {
       setFormError(errorMessage(cause));
@@ -314,11 +318,20 @@ export function UsersView() {
           )}
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Full name" htmlFor="new-name">
+            <Field label="First name" htmlFor="new-name">
               <TextInput
                 id="new-name"
-                value={form.full_name}
-                onChange={(event) => setForm({ ...form, full_name: event.target.value })}
+                autoComplete="off"
+                value={form.first_name}
+                onChange={(event) => setForm({ ...form, first_name: event.target.value })}
+              />
+            </Field>
+            <Field label="Last name" hint="optional" htmlFor="new-last-name">
+              <TextInput
+                id="new-last-name"
+                autoComplete="off"
+                value={form.last_name}
+                onChange={(event) => setForm({ ...form, last_name: event.target.value })}
               />
             </Field>
             <Field label="Work email" htmlFor="new-email">
@@ -439,10 +452,10 @@ export function UsersView() {
                   className="flex flex-col gap-3 py-3 first:pt-0 last:pb-0 lg:flex-row lg:items-center lg:justify-between"
                 >
                   <div className="flex min-w-0 items-center gap-3">
-                    <Avatar name={account.full_name} />
+                    <Avatar name={displayName(account)} />
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-sm font-medium">{account.full_name}</span>
+                        <span className="truncate text-sm font-medium">{displayName(account)}</span>
                         <Badge tone={ROLE_TONES[account.role as UserRole] ?? "neutral"}>
                           {roleLabel(account.role)}
                         </Badge>
@@ -458,7 +471,7 @@ export function UsersView() {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <SelectInput
-                      aria-label={`Role for ${account.full_name}`}
+                      aria-label={`Role for ${displayName(account)}`}
                       value={account.role}
                       disabled={busy}
                       className="w-40"

@@ -56,7 +56,7 @@ async function postSession(path: string, payload?: unknown): Promise<AuthUser> {
 
 /** Signs in and returns the profile stored in the resulting session. */
 export function signIn(input: LoginInput): Promise<AuthUser> {
-  return postSession("/api/session/login", input);
+  return postSession("/api/login", input);
 }
 
 /** Registers an account (the backend logs it in immediately). */

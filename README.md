@@ -40,6 +40,16 @@ Demo accounts in the dev database (see the backend README to change them):
 `Clinic@12345`. The patient demo `frontend-test@example.com` / `secret12345`
 also remains.
 
+## Profile and Memory Controls
+
+The Profile page lets a signed-in user update their name, phone number and uploaded profile photo. It also includes long-term memory controls backed by the API:
+
+- list saved memories from `GET /api/memories/`;
+- delete an individual memory with `DELETE /api/memories/{id}`;
+- clear all saved memories with `DELETE /api/memories/`.
+
+These controls give patients visibility into the durable preferences the assistant may use in future chats.
+
 ## Authentication
 ## Authentication
 

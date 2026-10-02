@@ -3,6 +3,19 @@ export function cn(...values: Array<string | false | null | undefined>): string 
   return values.filter(Boolean).join(" ");
 }
 
+/** Join first/last name parts into a display name, skipping blanks. */
+export function joinNames(first?: string | null, last?: string | null): string {
+  return [first, last].filter(Boolean).join(" ");
+}
+
+/** Display name for anything carrying the backend's split `first_name`/`last_name`. */
+export function displayName(name: {
+  first_name?: string | null;
+  last_name?: string | null;
+}): string {
+  return joinNames(name.first_name, name.last_name);
+}
+
 /** `09:00` -> `09:00:00` (the backend expects `HH:MM:SS` for `time.Time`). */
 export function toApiTime(value: string): string | null {
   if (!value) return null;

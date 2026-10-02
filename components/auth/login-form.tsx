@@ -36,10 +36,12 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
   const { login, register, status } = useAuth();
 
   const [mode, setMode] = useState<Mode>("signin");
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -55,13 +57,17 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
 
   function problems(): string[] {
     const issues: string[] = [];
-    if (mode === "signup" && fullName.trim().length < 2) {
-      issues.push("full name (min 2 characters)");
-    }
+    if (mode === "signup" && !firstName.trim()) issues.push("first name");
+    if (mode === "signup" && !lastName.trim()) issues.push("last name");
     if (!isValidEmail(email)) issues.push("valid email");
-    if (password.length < 8) issues.push("password (min 8 characters)");
-    if (mode === "signup" && phone.trim() && phone.trim().length < 7) {
+    if (mode === "signup" && !phone.trim()) {
+      issues.push("phone");
+    } else if (mode === "signup" && phone.trim().length < 7) {
       issues.push("phone (min 7 digits)");
+    }
+    if (password.length < 8) issues.push("password (min 8 characters)");
+    if (mode === "signup" && confirmPassword !== password) {
+      issues.push("passwords do not match");
     }
     return issues;
   }
@@ -83,11 +89,12 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
         await login({ email: email.trim(), password });
       } else {
         const payload: RegisterInput = {
-          full_name: fullName.trim(),
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
           email: email.trim(),
           password,
+          phone: phone.trim(),
         };
-        if (phone.trim()) payload.phone = phone.trim();
         await register(payload);
       }
       router.replace(nextPath);
@@ -155,20 +162,33 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
             {error && <Alert tone="danger">{error}</Alert>}
 
             {mode === "signup" && (
-              <Field label="Full name" htmlFor="full_name">
-                <TextInput
-                  id="full_name"
-                  name="full_name"
-                  autoComplete="name"
-                  value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
-                  placeholder="Sita Sharma"
-                  required
-                />
-              </Field>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="First name" htmlFor="first_name" required>
+                  <TextInput
+                    id="first_name"
+                    name="first_name"
+                    autoComplete="given-name"
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    placeholder="Sita"
+                    required
+                  />
+                </Field>
+                <Field label="Last name" htmlFor="last_name" required>
+                  <TextInput
+                    id="last_name"
+                    name="last_name"
+                    autoComplete="family-name"
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    placeholder="Sharma"
+                    required
+                  />
+                </Field>
+              </div>
             )}
 
-            <Field label="Email" htmlFor="email">
+            <Field label="Email" htmlFor="email" required>
               <TextInput
                 id="email"
                 name="email"
@@ -182,7 +202,7 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
             </Field>
 
             {mode === "signup" && (
-              <Field label="Phone" hint="optional" htmlFor="phone">
+              <Field label="Phone" htmlFor="phone" required>
                 <TextInput
                   id="phone"
                   name="phone"
@@ -191,11 +211,12 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                   placeholder="9800000000"
+                  required
                 />
               </Field>
             )}
 
-            <Field label="Password" hint="min 8 characters" htmlFor="password">
+            <Field label="Password" hint="min 8 characters" htmlFor="password" required>
               <TextInput
                 id="password"
                 name="password"
@@ -207,6 +228,21 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
                 required
               />
             </Field>
+
+            {mode === "signup" && (
+              <Field label="Confirm password" htmlFor="confirm_password" required>
+                <TextInput
+                  id="confirm_password"
+                  name="confirm_password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </Field>
+            )}
 
             <Button type="submit" className="w-full" loading={submitting}>
               {heading.submit}

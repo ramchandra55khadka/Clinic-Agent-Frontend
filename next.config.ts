@@ -49,6 +49,10 @@ const nextConfig: NextConfig = {
     browserToTerminal: "warn",
   },
 
+  experimental: {
+    useTypeScriptCli: false,
+  },
+
   /**
    * Without this, Next.js 308-redirects `/api/clinic/doctor-schedule/` down to
    * the slash-less form before the catch-all proxy route

@@ -5,9 +5,16 @@ import type {
   AvailabilityResponse,
   ChatRequest,
   ChatResponse,
+  ConversationDetail,
+  ConversationListResponse,
   DoctorSchedule,
   DoctorScheduleInput,
   ManagedUserInput,
+  Memory,
+  MemoryClearResponse,
+  MemoryCreateInput,
+  MemoryListResponse,
+  MemoryUpdateInput,
   PatientInput,
   ProfileUpdateInput,
   QueryRequest,
@@ -243,6 +250,78 @@ export function updateMe(input: ProfileUpdateInput): Promise<AuthUser> {
 }
 
 /* ------------------------------------------------------------------ */
+/* Conversations (chat memory)                                         */
+/* ------------------------------------------------------------------ */
+
+/** `GET /conversations/` — the signed-in patient's threads, newest first. */
+export function listConversations(): Promise<ConversationListResponse> {
+  return request<ConversationListResponse>("/conversations/");
+}
+
+/**
+ * `GET /conversations/{session_id}` — replay one thread so the UI can restore it
+ * after a refresh or on a different device. Returns the newest page of turns;
+ * pass `before` (a message id) to walk backwards through older ones.
+ */
+export function getConversation(
+  sessionId: string,
+  options?: { limit?: number; before?: number },
+): Promise<ConversationDetail> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set("limit", String(options.limit));
+  if (options?.before) params.set("before", String(options.before));
+  const query = params.toString();
+  return request<ConversationDetail>(
+    `/conversations/${encodeURIComponent(sessionId)}${query ? `?${query}` : ""}`,
+  );
+}
+
+/** `DELETE /conversations/{session_id}` — remove a thread and its turns. */
+export function deleteConversation(sessionId: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/conversations/${encodeURIComponent(sessionId)}`, {
+    method: "DELETE",
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Long-term memories                                                  */
+/* ------------------------------------------------------------------ */
+
+export function listMemories(): Promise<MemoryListResponse> {
+  return request<MemoryListResponse>("/memories/");
+}
+
+/** `PATCH /memories/{id}` — rewrite the value of one saved personalization. */
+export function updateMemory(memoryId: string, input: MemoryUpdateInput): Promise<Memory> {
+  return request<Memory>(`/memories/${encodeURIComponent(memoryId)}`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+/**
+ * `PUT /memories/{key}` — save a personalization the user chose themselves.
+ *
+ * The key is the slot, not a new row each time: reusing one overwrites its
+ * value (200) instead of creating a duplicate, while a fresh slot is created
+ * (201).
+ */
+export function createMemory(input: MemoryCreateInput): Promise<Memory> {
+  return request<Memory>(`/memories/${encodeURIComponent(input.key)}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteMemory(memoryId: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/memories/${memoryId}`, { method: "DELETE" });
+}
+
+export function clearMemories(): Promise<MemoryClearResponse> {
+  return request<MemoryClearResponse>("/memories/", { method: "DELETE" });
+}
+
+/* ------------------------------------------------------------------ */
 /* Account management (admin only — the backend enforces this)         */
 /* ------------------------------------------------------------------ */
 
@@ -304,6 +383,14 @@ export const api = {
   getHealth,
   getMe,
   updateMe,
+  listMemories,
+  updateMemory,
+  createMemory,
+  deleteMemory,
+  clearMemories,
+  listConversations,
+  getConversation,
+  deleteConversation,
   chat,
   queryDoctorInfo,
   listSchedules,

@@ -29,7 +29,7 @@ export function Card({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(15,23,42,0.04)]",
+        "rounded-lg border border-line bg-surface shadow-[0_1px_2px_rgba(15,23,42,0.04)]",
         className,
       )}
     >
@@ -94,7 +94,7 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-xl font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
         size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
         BUTTON_VARIANTS[variant],
         className,
@@ -149,7 +149,7 @@ export function Badge({
 /* ------------------------------------------------------------------ */
 
 export const inputClass =
-  "w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm text-foreground transition placeholder:text-muted/70 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:opacity-60 dark:focus:ring-brand-800/50";
+  "w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-foreground transition placeholder:text-muted/70 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:opacity-60 dark:focus:ring-brand-800/50";
 
 export function Field({
   label,
@@ -157,17 +157,25 @@ export function Field({
   htmlFor,
   children,
   className,
+  required,
 }: {
   label: string;
   hint?: string;
   htmlFor?: string;
   children: ReactNode;
   className?: string;
+  /** Marks the label with a red `*` — only for fields the user must fill in. */
+  required?: boolean;
 }) {
   return (
     <div className={cn("space-y-1.5", className)}>
       <label htmlFor={htmlFor} className="block text-xs font-medium text-muted">
         {label}
+        {required && (
+          <span className="ml-0.5 font-medium text-red-600 dark:text-red-400" aria-hidden="true">
+            *
+          </span>
+        )}
         {hint && <span className="ml-1 font-normal text-muted/80">({hint})</span>}
       </label>
       {children}
@@ -217,7 +225,7 @@ export function Alert({
   return (
     <div
       className={cn(
-        "rounded-xl border px-3 py-2 text-xs leading-relaxed",
+        "rounded-lg border px-3 py-2 text-xs leading-relaxed",
         ALERT_TONES[tone],
         className,
       )}
@@ -237,7 +245,7 @@ export function EmptyState({
   icon?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center rounded-xl border border-dashed border-line px-4 py-10 text-center">
+    <div className="flex flex-col items-center rounded-lg border border-dashed border-line px-4 py-10 text-center">
       {icon && (
         <span className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-surface-muted text-muted">
           {icon}
@@ -312,7 +320,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-line bg-surface px-4 py-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]",
+        "rounded-lg border border-line bg-surface px-4 py-3.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]",
         className,
       )}
     >

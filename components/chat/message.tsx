@@ -20,7 +20,7 @@ function SlotGrid({
   const availableCount = slots.filter((slot) => slot.available).length;
 
   return (
-    <div className="mt-3 rounded-2xl border border-line bg-surface-muted p-3">
+    <div className="mt-3 rounded-lg border border-line bg-surface-muted p-3">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-medium">
           {availableCount} of {slots.length} slot{slots.length === 1 ? "" : "s"} available
@@ -143,7 +143,7 @@ export function ChatBubble({
   if (message.role === "user") {
     return (
       <div className="fade-in flex justify-end py-3">
-        <div className="max-w-[78%] rounded-3xl bg-surface-muted px-4 py-2.5 text-sm text-foreground">
+        <div className="max-w-[82%] rounded-lg bg-surface-muted px-4 py-2.5 text-sm text-foreground shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           <p className="whitespace-pre-wrap">{message.text}</p>
         </div>
       </div>
@@ -162,7 +162,7 @@ export function ChatBubble({
           className={cn(
             "prose-chat text-sm leading-7",
             message.error
-              ? "rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+              ? "rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
               : "text-foreground",
           )}
         >
