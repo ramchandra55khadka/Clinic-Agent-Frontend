@@ -43,10 +43,10 @@ export function SiteFooter() {
 
   return (
     <footer className="border-t border-line">
-      <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-2 px-4 py-4 text-xs text-muted sm:flex-row sm:px-6">
-        <p>© 2026 Nishant Care · Chat-first appointment booking</p>
-        <p className="inline-flex items-center gap-2">
-          <span className={cn("h-1.5 w-1.5 rounded-full", label.dot)} />
+      <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-between gap-3 px-4 py-4 text-xs text-muted sm:flex-row sm:px-6 sm:gap-4">
+        <p className="text-center sm:text-left">© 2026 Nishant Care · Chat-first appointment booking</p>
+        <p className="inline-flex items-center gap-2 whitespace-nowrap">
+          <span className={cn("h-1.5 w-1.5 rounded-full flex-shrink-0", label.dot)} />
           {label.text}
         </p>
       </div>

@@ -10,7 +10,7 @@ export const metadata = {
  * Doctors and their availability are maintained by clinic staff or an admin;
  * patients are sent to `/forbidden`. The backend enforces the same rule.
  */
-export default async function SchedulesPage() {
-  await requireRole("/schedules", CLINIC_STAFF_ROLES);
+export default async function DoctorPage() {
+  await requireRole("/doctor", CLINIC_STAFF_ROLES);
   return <SchedulesView />;
 }

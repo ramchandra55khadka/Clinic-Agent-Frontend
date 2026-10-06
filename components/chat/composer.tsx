@@ -2,19 +2,21 @@
 
 import { useState } from "react";
 
-import { IconSend } from "@/components/icons";
+import { IconSend, IconStop } from "@/components/icons";
 
 const QUICK_PROMPTS = [
   "Book an appointment for me",
-  "Book doctor id 1 tomorrow at 10 AM",
+  "Book an appointment tomorrow at 10 AM",
   "Tell me about our doctors",
 ];
 
 export function Composer({
   onSend,
+  onStop,
   busy,
 }: {
   onSend: (text: string) => void;
+  onStop: () => void;
   busy: boolean;
 }) {
   const [value, setValue] = useState("");
@@ -28,14 +30,14 @@ export function Composer({
 
   return (
     <div>
-      <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+      <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1 scroll-thin">
         {QUICK_PROMPTS.map((prompt) => (
           <button
             key={prompt}
             type="button"
             disabled={busy}
             onClick={() => onSend(prompt)}
-            className="shrink-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-muted transition hover:bg-surface-muted hover:text-foreground disabled:opacity-50"
+            className="shrink-0 rounded-lg border border-line bg-surface px-3 py-1.5 text-xs text-muted transition hover:bg-surface-muted hover:text-foreground disabled:opacity-50 touch-target whitespace-nowrap"
           >
             {prompt}
           </button>
@@ -56,15 +58,27 @@ export function Composer({
           placeholder="Message Nishant Care"
           className="scroll-thin max-h-40 min-h-10 w-full resize-none bg-transparent px-3 py-2 text-sm outline-none placeholder:text-muted/70"
         />
-        <button
-          type="button"
-          onClick={submit}
-          disabled={busy || value.trim().length === 0}
-          aria-label="Send message"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-600 text-white transition hover:bg-accent-600/90 disabled:cursor-not-allowed disabled:bg-muted/40"
-        >
-          <IconSend className="h-4 w-4" />
-        </button>
+        {busy ? (
+          <button
+            type="button"
+            onClick={onStop}
+            aria-label="Stop generating"
+            title="Stop generating"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-foreground text-background transition hover:bg-foreground/80 touch-target"
+          >
+            <IconStop className="h-4 w-4" fill="currentColor" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={submit}
+            disabled={value.trim().length === 0}
+            aria-label="Send message"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent-600 text-white transition hover:bg-accent-600/90 disabled:cursor-not-allowed disabled:bg-muted/40 touch-target"
+          >
+            <IconSend className="h-4 w-4" />
+          </button>
+        )}
       </div>
     </div>
   );

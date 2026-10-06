@@ -1,0 +1,18 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: clinic-agent-frontend:latest
+    container_name: clinic-agent-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      # Use FRONTEND_BACKEND_URL so the local .env BACKEND_URL=127.0.0.1 does
+      # not accidentally point the container back at itself.
+      BACKEND_URL: "${FRONTEND_BACKEND_URL:-http://host.docker.internal:8000}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped

@@ -15,7 +15,7 @@ import {
   StatCard,
 } from "@/components/ui";
 import { IconCalendarCheck, IconUsers } from "@/components/icons";
-import { listAppointments } from "@/lib/api";
+import { listAllAppointments, listAppointments } from "@/lib/api";
 import { doctorLabel, useDoctors } from "@/lib/hooks";
 import type { Appointment } from "@/lib/types";
 import { errorMessage, formatDate, formatTime, todayIso } from "@/lib/utils";
@@ -23,7 +23,8 @@ import { errorMessage, formatDate, formatTime, todayIso } from "@/lib/utils";
 export function AppointmentsView() {
   const { doctors, loading: doctorsLoading, error: doctorsError, reload } = useDoctors();
 
-  const [selectedDoctorId, setSelectedDoctorId] = useState("");
+  /* Defaults to "All doctors" so staff/admin track the whole clinic on arrival. */
+  const [selectedDoctorId, setSelectedDoctorId] = useState("all");
   const [refreshToken, setRefreshToken] = useState(0);
   const [result, setResult] = useState<{
     key: string;
@@ -31,7 +32,6 @@ export function AppointmentsView() {
     error: string | null;
   } | null>(null);
 
-  /* Default to the first doctor without needing a state-syncing effect. */
   const doctorId = selectedDoctorId || (doctors[0] ? String(doctors[0].id) : "");
   const requestKey = `${doctorId}:${refreshToken}`;
 
@@ -40,7 +40,9 @@ export function AppointmentsView() {
     const key = requestKey;
     let active = true;
 
-    listAppointments(Number(doctorId))
+    const load = doctorId === "all" ? listAllAppointments() : listAppointments(Number(doctorId));
+
+    load
       .then((rows) => {
         if (active) setResult({ key, appointments: rows, error: null });
       })
@@ -72,6 +74,14 @@ export function AppointmentsView() {
   const emailLabel: Record<string, string> = {
     sent: "Sent",
     pending: "Pending",
+  };
+
+  /* In the clinic-wide list each row says which doctor it belongs to. */
+  const doctorNameFor = (appointment: Appointment): string => {
+    const doctor = doctors.find(
+      (candidate) => String(candidate.id) === String(appointment.doctor_id),
+    );
+    return doctor ? doctorLabel(doctor) : `Doctor #${appointment.doctor_id}`;
   };
 
   return (
@@ -107,7 +117,7 @@ export function AppointmentsView() {
           disabled={doctorsLoading}
           aria-label="Doctor"
         >
-          <option value="">Select a doctor…</option>
+          <option value="all">All doctors</option>
           {doctors.map((doctor) => (
             <option key={doctor.id} value={String(doctor.id)}>
               {doctorLabel(doctor)}
@@ -130,7 +140,11 @@ export function AppointmentsView() {
       </Card>
 
       <Card
-        title={selectedDoctor ? selectedDoctor.doctor_name : "Appointments"}
+        title={
+          doctorId === "all"
+            ? "All appointments"
+            : (selectedDoctor?.doctor_name ?? "Appointments")
+        }
         subtitle={
           busy
             ? "Loading…"
@@ -154,13 +168,16 @@ export function AppointmentsView() {
             description="Book one from the Assistant page and it will show up here instantly."
           />
         ) : (
-          <div className="scroll-thin -mx-2 overflow-x-auto px-2">
+          <div className="table-responsive -mx-2 overflow-x-auto px-2">
             <table className="w-full min-w-[720px] border-collapse text-sm">
               <thead>
                 <tr className="text-left text-xs text-muted">
                   <th className="pb-2 pr-3 font-medium">Patient</th>
                   <th className="pb-2 pr-3 font-medium">Age / Sex</th>
                   <th className="pb-2 pr-3 font-medium">Contact</th>
+                  {doctorId === "all" && (
+                    <th className="pb-2 pr-3 font-medium">Doctor</th>
+                  )}
                   <th className="pb-2 pr-3 font-medium">When</th>
                   <th className="pb-2 pr-3 font-medium">Status</th>
                   <th className="pb-2 font-medium">Confirmation</th>
@@ -174,7 +191,7 @@ export function AppointmentsView() {
                         <Avatar name={appointment.patient_name} />
                         <span className="flex flex-col">
                           <span className="font-medium">{appointment.patient_name}</span>
-                          <span className="text-[11px] text-muted">#{appointment.id}</span>
+                          <span className="text-2xs text-muted">#{appointment.id}</span>
                         </span>
                       </span>
                     </td>
@@ -185,6 +202,11 @@ export function AppointmentsView() {
                       <span className="block">{appointment.email}</span>
                       <span className="block">{appointment.phone}</span>
                     </td>
+                    {doctorId === "all" && (
+                      <td className="py-2.5 pr-3 text-xs text-muted">
+                        {doctorNameFor(appointment)}
+                      </td>
+                    )}
                     <td className="py-2.5 pr-3 text-xs">
                       <span className="block font-medium">{formatDate(appointment.date)}</span>
                       <span className="block text-muted">{formatTime(appointment.time)}</span>

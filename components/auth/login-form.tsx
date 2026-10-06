@@ -107,28 +107,28 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
   const heading = HEADINGS[mode];
 
   return (
-    <div className="flex w-full flex-1 lg:grid lg:grid-cols-2">
+    <div className="flex w-full flex-1 lg:grid lg:grid-cols-2 min-h-[calc(100vh-112px)]">
       {/* Brand panel — desktop only */}
       <aside className="relative hidden overflow-hidden bg-brand-700 lg:block">
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-gradient-to-br from-brand-600 via-brand-700 to-accent-600"
         />
-        <div className="relative flex h-full flex-col justify-between p-10 text-white">
+        <div className="relative flex h-full flex-col justify-between p-6 sm:p-10 text-white">
           <div className="flex items-center gap-2.5">
             <LogoMark className="h-9 w-9" />
             <span className="text-sm font-semibold tracking-tight">Nishant Care</span>
           </div>
 
           <div className="max-w-md">
-            <h2 className="text-3xl font-semibold leading-tight tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-semibold leading-tight tracking-tight">
               Your care, without the waiting room.
             </h2>
             <p className="mt-3 text-sm leading-relaxed text-brand-100">
               Our assistant helps you find the right doctor, check opening times and book an
               appointment — in under a minute.
             </p>
-            <ul className="mt-8 space-y-3">
+            <ul className="mt-6 sm:mt-8 space-y-3">
               {BENEFITS.map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-center gap-3 text-sm text-brand-50">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/15">
@@ -145,7 +145,7 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
       </aside>
 
       {/* Form panel */}
-      <div className="flex items-center justify-center px-4 py-12 sm:px-6">
+      <div className="flex items-center justify-center px-4 py-8 sm:px-6 lg:py-12">
         <div className="w-full max-w-md">
           <div className="mb-6 flex items-center gap-2.5 lg:hidden">
             <LogoMark className="h-8 w-8" />
@@ -226,6 +226,7 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="••••••••"
                 required
+                showPasswordToggle
               />
             </Field>
 
@@ -240,6 +241,7 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
                   onChange={(event) => setConfirmPassword(event.target.value)}
                   placeholder="••••••••"
                   required
+                  showPasswordToggle
                 />
               </Field>
             )}
@@ -259,7 +261,7 @@ export function LoginForm({ nextPath, expired }: { nextPath: string; expired: bo
               </button>
             </p>
 
-            <p className="text-center text-[11px] leading-relaxed text-muted">
+            <p className="text-center text-2xs leading-relaxed text-muted">
               {mode === "signin"
                 ? "Clinic staff and administrators: use the credentials issued by your clinic administrator."
                 : "Creating an account signs you up as a patient. Clinic staff accounts are issued by an administrator."}

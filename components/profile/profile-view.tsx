@@ -99,7 +99,7 @@ export function ProfileView() {
       return;
     }
     if (file.size > MAX_PHOTO_BYTES) {
-      setError("Choose a smaller image, under 180 KB.");
+      setError("Choose a smaller image, under 5 MB.");
       return;
     }
 
@@ -257,7 +257,7 @@ export function ProfileView() {
   if (!user) return null;
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
+    <main className="page-shell">
       <div className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
         <p className="mt-1 text-sm text-muted">Update your clinic account details.</p>
@@ -395,7 +395,7 @@ export function ProfileView() {
               : "Personalizations are paused, so nothing new is saved for future chats."
           }
           action={
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {!addingMemory && availableMemoryKeys.length > 0 && (
                 <Button variant="secondary" size="sm" onClick={startAddingMemory}>
                   Add personalization
@@ -414,7 +414,7 @@ export function ProfileView() {
           {addingMemory && (
             <form className="mb-4 rounded-lg border border-line bg-surface-muted p-4" onSubmit={handleCreateMemory}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-                <Field label="What to remember" className="sm:w-56">
+                <Field label="What to remember" className="w-full sm:w-56">
                   <SelectInput
                     value={newMemoryKey}
                     onChange={(event) => {
@@ -439,7 +439,7 @@ export function ProfileView() {
                   />
                 </Field>
               </div>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <Button type="submit" size="sm" loading={savingNewMemory}>
                   Save
                 </Button>
@@ -478,9 +478,9 @@ export function ProfileView() {
                             onChange={(event) => setMemoryDraft(event.target.value)}
                             maxLength={200}
                             aria-label={`${memoryLabel(memory.key)} value`}
-                            className="sm:max-w-xs"
+                            className="w-full sm:max-w-xs"
                           />
-                          <div className="flex gap-2">
+                          <div className="flex flex-wrap gap-2">
                             <Button type="submit" size="sm" loading={memoryBusyId === memory.id}>
                               Save
                             </Button>
@@ -496,7 +496,7 @@ export function ProfileView() {
                       )}
                     </div>
                     {!editing && (
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         <Button variant="secondary" size="sm" onClick={() => startEditingMemory(memory)}>
                           Edit
                         </Button>

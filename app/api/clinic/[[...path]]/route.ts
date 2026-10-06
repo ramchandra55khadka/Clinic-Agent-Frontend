@@ -91,6 +91,7 @@ function forward(
   headers: Headers,
   body: ArrayBuffer | undefined,
   token: string | null,
+  signal?: AbortSignal,
 ): Promise<Response> {
   const attemptHeaders = new Headers(headers);
   if (token) {
@@ -106,6 +107,9 @@ function forward(
     cache: "no-store",
   };
   if (body) init.body = body;
+  // Link the browser's abort (the chat Stop button) to the upstream call so a
+  // stopped reply does not keep the backend working for a client that left.
+  if (signal) init.signal = signal;
 
   return fetch(target, init);
 }
@@ -133,7 +137,7 @@ async function proxy(request: Request): Promise<Response> {
 
   let upstream: Response;
   try {
-    upstream = await forward(target, method, headers, body, token);
+    upstream = await forward(target, method, headers, body, token, request.signal);
   } catch {
     return backendUnreachable();
   }
@@ -150,7 +154,7 @@ async function proxy(request: Request): Promise<Response> {
         await upstream.body?.cancel().catch(() => undefined);
         await persistTokens(rotated);
         try {
-          upstream = await forward(target, method, headers, body, rotated.access_token);
+          upstream = await forward(target, method, headers, body, rotated.access_token, request.signal);
         } catch {
           return backendUnreachable();
         }

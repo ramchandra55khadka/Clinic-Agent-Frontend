@@ -7,6 +7,7 @@ import type {
   ChatResponse,
   ConversationDetail,
   ConversationListResponse,
+  ConversationSummary,
   DoctorSchedule,
   DoctorScheduleInput,
   ManagedUserInput,
@@ -82,6 +83,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       cache: "no-store",
     });
   } catch {
+    // An aborted fetch (the Stop button) is a deliberate user action, not a
+    // connectivity failure — surface it as AbortError so callers can tell.
+    if (init?.signal?.aborted) {
+      throw new DOMException("The request was aborted.", "AbortError");
+    }
     throw new ApiError(
       "Cannot reach the clinic backend. Start it with `uv run uvicorn app.main:app --reload`.",
       0,
@@ -133,8 +139,22 @@ export function getHealth(): Promise<HealthResponse> {
 /* ------------------------------------------------------------------ */
 
 /** `POST /chat` — the LangGraph clinic workflow (doctor bio / availability / booking). */
-export function chat(payload: ChatRequest): Promise<ChatResponse> {
-  return post<ChatResponse>("/chat", payload);
+export function chat(payload: ChatRequest, options?: { signal?: AbortSignal }): Promise<ChatResponse> {
+  return request<ChatResponse>("/chat", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    signal: options?.signal,
+  });
+}
+
+/** Confirm a pending chat booking in the active conversation. */
+export function confirmChatBooking(sessionId: string, options?: { signal?: AbortSignal }): Promise<ChatResponse> {
+  return chat({ session_id: sessionId, message: "yes" }, options);
+}
+
+/** Cancel a pending chat booking before it is saved. */
+export function cancelChatBooking(sessionId: string, options?: { signal?: AbortSignal }): Promise<ChatResponse> {
+  return chat({ session_id: sessionId, message: "no" }, options);
 }
 
 /** `POST /rag` — direct doctor-info RAG query. */
@@ -182,6 +202,11 @@ export function createAppointment(patient: PatientInput): Promise<Appointment> {
 
 export function listAppointments(doctorId: number): Promise<Appointment[]> {
   return request<Appointment[]>(`/appointments/${doctorId}`);
+}
+
+/** `GET /appointments/` — clinic-wide list (staff and admin). */
+export function listAllAppointments(): Promise<Appointment[]> {
+  return request<Appointment[]>("/appointments/");
 }
 
 /* ------------------------------------------------------------------ */
@@ -280,6 +305,14 @@ export function getConversation(
 export function deleteConversation(sessionId: string): Promise<{ message: string }> {
   return request<{ message: string }>(`/conversations/${encodeURIComponent(sessionId)}`, {
     method: "DELETE",
+  });
+}
+
+/** `PATCH /conversations/{session_id}` — rename the sidebar title of a thread. */
+export function renameConversation(sessionId: string, title: string): Promise<ConversationSummary> {
+  return request<ConversationSummary>(`/conversations/${encodeURIComponent(sessionId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ title }),
   });
 }
 
@@ -391,6 +424,7 @@ export const api = {
   listConversations,
   getConversation,
   deleteConversation,
+  renameConversation,
   chat,
   queryDoctorInfo,
   listSchedules,
@@ -400,6 +434,7 @@ export const api = {
   deleteSchedule,
   createAppointment,
   listAppointments,
+  listAllAppointments,
   listMyAppointments,
   getMyAppointment,
   updateMyAppointment,

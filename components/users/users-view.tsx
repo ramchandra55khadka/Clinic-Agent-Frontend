@@ -9,19 +9,22 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
   Field,
+  FilterChips,
   LoadingBlock,
   PageHeader,
   SelectInput,
   StatCard,
   TextInput,
 } from "@/components/ui";
+import { toast } from "@/components/toast";
 import { useAuth } from "@/components/auth/auth-provider";
 import { createUser, deleteUser, listUsers, setUserActive, updateUserRole } from "@/lib/api";
 import { roleLabel } from "@/lib/roles";
 import type { AuthUser, ManagedUserInput, UserRole } from "@/lib/types";
-import { cn, displayName, errorMessage, isValidEmail } from "@/lib/utils";
+import { displayName, errorMessage, isValidEmail } from "@/lib/utils";
 
 const ROLE_OPTIONS: UserRole[] = ["patient", "staff", "admin"];
 
@@ -67,8 +70,8 @@ export function UsersView() {
 
   const [filter, setFilter] = useState<RoleFilter>("all");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AuthUser | null>(null);
 
   const [form, setForm] = useState<CreateForm>(EMPTY_FORM);
   const [formOpen, setFormOpen] = useState(false);
@@ -126,7 +129,6 @@ export function UsersView() {
   function refresh() {
     setUsers(null);
     setLoadError(null);
-    setNotice(null);
     setActionError(null);
     setReloadKey((value) => value + 1);
   }
@@ -137,11 +139,10 @@ export function UsersView() {
     if (role === target.role) return;
     setBusyId(target.id);
     setActionError(null);
-    setNotice(null);
     try {
       const updated = await updateUserRole(target.id, role);
       replaceUser(updated);
-      setNotice(
+      toast.success(
         `${displayName(updated)} is now ${roleLabel(updated.role)}. Their other sessions were signed out.`,
       );
     } catch (cause) {
@@ -154,11 +155,10 @@ export function UsersView() {
   async function handleToggleActive(target: AuthUser) {
     setBusyId(target.id);
     setActionError(null);
-    setNotice(null);
     try {
       const updated = await setUserActive(target.id, !target.is_active);
       replaceUser(updated);
-      setNotice(
+      toast.success(
         updated.is_active
           ? `${displayName(updated)} can sign in again.`
           : `${displayName(updated)} was deactivated and signed out everywhere.`,
@@ -170,19 +170,17 @@ export function UsersView() {
     }
   }
 
-  async function handleDeleteAccount(target: AuthUser) {
-    const confirmed = window.confirm(
-      `Permanently delete ${displayName(target)}? This removes the account and cannot be undone.`,
-    );
-    if (!confirmed) return;
+  async function handleDeleteAccount() {
+    const target = deleteTarget;
+    if (!target) return;
 
     setBusyId(target.id);
     setActionError(null);
-    setNotice(null);
     try {
       await deleteUser(target.id);
       setUsers((rows) => (rows ?? []).filter((row) => row.id !== target.id));
-      setNotice(`${displayName(target)} was permanently deleted.`);
+      setDeleteTarget(null);
+      toast.success(`${displayName(target)} was permanently deleted.`);
     } catch (cause) {
       setActionError(errorMessage(cause));
     } finally {
@@ -213,13 +211,12 @@ export function UsersView() {
 
     setCreating(true);
     setFormError(null);
-    setNotice(null);
     try {
       const created = await createUser(payload);
       setUsers((rows) => [...(rows ?? []), created]);
       setForm(EMPTY_FORM);
       setFormOpen(false);
-      setNotice(
+      toast.success(
         `${displayName(created)} was added as ${roleLabel(created.role)}. Share the password with them securely.`,
       );
     } catch (cause) {
@@ -290,12 +287,6 @@ export function UsersView() {
           >
             Try again
           </button>
-        </Alert>
-      )}
-
-      {notice && (
-        <Alert tone="success" className="mt-5">
-          {notice}
         </Alert>
       )}
 
@@ -410,25 +401,16 @@ export function UsersView() {
               }`
         }
         action={
-          <div className="flex flex-wrap gap-1.5">
-            {ROLE_FILTERS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                aria-pressed={filter === option.key}
-                onClick={() => setFilter(option.key)}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                  filter === option.key
-                    ? "border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-700 dark:bg-brand-800/30 dark:text-brand-200"
-                    : "border-line bg-surface text-muted hover:bg-surface-muted hover:text-foreground",
-                )}
-              >
-                {option.label}
-                <span className="ml-1 text-muted">{filterCounts[option.key]}</span>
-              </button>
-            ))}
-          </div>
+          <FilterChips
+            label="Filter by role"
+            options={ROLE_FILTERS.map((option) => ({
+              value: option.key,
+              label: option.label,
+              count: filterCounts[option.key],
+            }))}
+            value={filter}
+            onChange={(value) => setFilter(value as RoleFilter)}
+          />
         }
       >
         {users === null && <LoadingBlock label="Loading accounts…" />}
@@ -474,7 +456,7 @@ export function UsersView() {
                       aria-label={`Role for ${displayName(account)}`}
                       value={account.role}
                       disabled={busy}
-                      className="w-40"
+                      className="w-full sm:w-40"
                       onChange={(event) =>
                         void handleRoleChange(account, event.target.value as UserRole)
                       }
@@ -493,6 +475,7 @@ export function UsersView() {
                       disabled={isSelf}
                       title={isSelf ? "You cannot deactivate your own account" : undefined}
                       onClick={() => void handleToggleActive(account)}
+                      className="touch-target"
                     >
                       {account.is_active ? "Deactivate" : "Reactivate"}
                     </Button>
@@ -503,7 +486,8 @@ export function UsersView() {
                       loading={busy}
                       disabled={isSelf}
                       title={isSelf ? "You cannot delete your own account" : undefined}
-                      onClick={() => void handleDeleteAccount(account)}
+                      onClick={() => setDeleteTarget(account)}
+                      className="touch-target"
                     >
                       Delete
                     </Button>
@@ -549,6 +533,20 @@ export function UsersView() {
           </div>
         </dl>
       </Card>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete account"
+        busy={busyId === deleteTarget?.id}
+        message={
+          deleteTarget
+            ? `Permanently delete ${displayName(deleteTarget)}? This removes the account and cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete account"
+        onConfirm={() => void handleDeleteAccount()}
+        onClose={() => setDeleteTarget(null)}
+      />
     </main>
   );
 }

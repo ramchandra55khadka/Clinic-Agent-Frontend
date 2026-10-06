@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 /** Friendly label for a page path, used in the explanation. */
 const PAGE_LABELS: Record<string, string> = {
-  "/schedules": "Doctors & schedules",
+  "/doctor": "Doctors & schedules",
   "/appointments": "Appointments",
   "/users": "Team & accounts",
 };

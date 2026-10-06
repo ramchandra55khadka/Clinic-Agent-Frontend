@@ -1,6 +1,8 @@
-/** Join conditional class names. */
+import { twMerge } from "tailwind-merge";
+
+/** Join conditional class names, letting later Tailwind classes win. */
 export function cn(...values: Array<string | false | null | undefined>): string {
-  return values.filter(Boolean).join(" ");
+  return twMerge(values.filter(Boolean).join(" "));
 }
 
 /** Join first/last name parts into a display name, skipping blanks. */
@@ -65,9 +67,21 @@ export function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim());
 }
 
+/** Weekday names the backend uses for schedule days (Sunday-first order). */
+export const WEEKDAYS: readonly string[] = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 const REASON_LABELS: Record<string, string> = {
   doctor_not_found: "Doctor not found",
   doctor_on_leave: "Doctor is on leave",
+  not_working_day: "Doctor doesn't work that day",
   before_working_hours: "Before working hours",
   after_working_hours: "After working hours",
   during_break: "During the doctor's break",

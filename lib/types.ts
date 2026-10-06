@@ -31,6 +31,13 @@ export interface DoctorSchedule {
   /** The primary key of the working-hours row. */
   schedule_id: number;
   doctor_name: string;
+  first_name: string;
+  last_name: string | null;
+  email: string | null;
+  phone: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  address: string | null;
   specialization: string | null;
   photo_url: string | null;
   start_time: string;
@@ -39,6 +46,8 @@ export interface DoctorSchedule {
   break_end: string | null;
   leave_date: string | null;
   slot_duration: number;
+  /** Weekdays the hours apply to (all seven when the backend has none). */
+  days?: string[] | null;
   /* Normalized `doctor` attributes (optional in the API). */
   license_number?: string | null;
   qualification?: string | null;
@@ -47,25 +56,50 @@ export interface DoctorSchedule {
   consultation_fee?: number | null;
   consultation_duration?: number | null;
   is_verified?: boolean;
+  educations?: DoctorEducation[];
+}
+
+export interface DoctorEducation {
+  id?: number;
+  degree: string;
+  institution: string;
+  field_of_study?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  description?: string | null;
 }
 
 export interface DoctorScheduleInput {
-  doctor_name: string;
-  specialization?: string | null;
+  // UserProfile fields
+  first_name: string;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  gender?: string | null;
+  address?: string | null;
   photo_url?: string | null;
-  start_time: string;
-  end_time: string;
-  break_start?: string | null;
-  break_end?: string | null;
-  leave_date?: string | null;
-  slot_duration: number;
+
+  // Doctor fields
   license_number?: string | null;
+  specialization?: string | null;
   qualification?: string | null;
   experience_years?: number | null;
   bio?: string | null;
   consultation_fee?: number | null;
   consultation_duration?: number | null;
   is_verified?: boolean;
+  educations?: DoctorEducation[];
+
+  // DoctorSchedule fields
+  start_time: string;
+  end_time: string;
+  break_start?: string | null;
+  break_end?: string | null;
+  leave_date?: string | null;
+  slot_duration: number;
+  /** Weekdays (full English names) the hours apply to; omitted = every day. */
+  days?: string[] | null;
 }
 
 export interface PatientInput {
@@ -106,19 +140,84 @@ export interface BookedAppointment {
   email_status?: string;
 }
 
+export interface PendingBooking {
+  doctor_id?: number;
+  doctor_name?: string;
+  patient_name?: string;
+  age?: number | string;
+  sex?: string;
+  email?: string;
+  phone?: string;
+  date?: string;
+  time?: string;
+}
+
+export interface ChatDoctorEducation {
+  id?: number;
+  degree: string;
+  institution: string;
+  field_of_study?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  description?: string | null;
+}
+
+export interface ChatDoctorSchedule {
+  schedule_id: number;
+  start_time: string;
+  end_time: string;
+  break_start?: string | null;
+  break_end?: string | null;
+  leave_date?: string | null;
+  slot_duration: number;
+  days: string[];
+}
+
+export interface ChatDoctor {
+  id: number;
+  doctor_name: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  gender?: string | null;
+  address?: string | null;
+  photo_url?: string | null;
+  license_number?: string | null;
+  specialization?: string | null;
+  qualification?: string | null;
+  experience_years?: number | null;
+  bio?: string | null;
+  consultation_fee?: number | null;
+  consultation_duration?: number | null;
+  is_verified?: boolean;
+  educations?: ChatDoctorEducation[];
+  schedules?: ChatDoctorSchedule[];
+}
+
 /** `ChatResponse.data` is an untyped dict on the backend; these are its known shapes. */
 export interface ChatData {
   available?: boolean;
   reason?: string | null;
   slots?: Slot[];
+  booking?: PendingBooking;
+  doctors?: ChatDoctor[];
+  source?: string;
+  view?: "list" | "detail";
+  count?: number;
   doctor_id?: number;
   date?: string;
   time?: string;
   next_step?: string;
   required?: string[];
+  awaiting_confirmation?: boolean;
   status?: string;
   appointment?: BookedAppointment;
   email_status?: string;
+  /** Set when the assistant had no grounded answer and asks a clarifying follow-up. */
+  clarification?: boolean;
+  /** Suggested follow-up topics, rendered as quick-reply chips. */
+  clarification_options?: string[];
 }
 
 export interface ChatRequest {
@@ -254,6 +353,7 @@ export interface MemoryUpdateInput {
  * that already exists replaces it rather than adding a second row.
  */
 export const MEMORY_KEYS = [
+  "name",
   "preferred_time",
   "preferred_doctor",
   "preferred_specialty",

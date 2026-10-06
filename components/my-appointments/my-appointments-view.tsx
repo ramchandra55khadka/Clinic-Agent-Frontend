@@ -8,17 +8,22 @@ import { IconCalendarCheck, IconChevronDown, IconClock, IconStethoscope } from "
 import {
   Alert,
   Avatar,
-  Badge,
   Button,
   Card,
+  ConfirmDialog,
   EmptyState,
   Field,
+  FilterChips,
   LoadingBlock,
   PageHeader,
   SelectInput,
+  SlotChip,
   StatCard,
+  StatusBadge,
   TextInput,
+  buttonClass,
 } from "@/components/ui";
+import { toast } from "@/components/toast";
 import {
   cancelMyAppointment,
   listMyAppointments,
@@ -50,11 +55,6 @@ const FILTERS = [
 ] as const;
 
 type FilterKey = (typeof FILTERS)[number]["key"];
-
-const STATUS_LABELS: Record<string, string> = {
-  confirmed: "Confirmed",
-  cancelled: "Cancelled",
-};
 
 const EMAIL_LABELS: Record<string, string> = {
   sent: "A confirmation email has been sent.",
@@ -90,12 +90,6 @@ function sortKey(appointment: Appointment): string {
   return `${appointment.date} ${fromApiTime(appointment.time)}`;
 }
 
-function statusTone(status: string): "success" | "danger" | "neutral" {
-  if (status === "confirmed") return "success";
-  if (status === "cancelled") return "danger";
-  return "neutral";
-}
-
 /* ------------------------------------------------------------------ */
 /* View                                                                */
 /* ------------------------------------------------------------------ */
@@ -114,7 +108,6 @@ export function MyAppointmentsView() {
   const [form, setForm] = useState<EditForm | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -214,7 +207,6 @@ export function MyAppointmentsView() {
     setEditing(false);
     setForm(null);
     setFormError(null);
-    setNotice(null);
     setConfirmingCancel(false);
   }
 
@@ -222,7 +214,6 @@ export function MyAppointmentsView() {
     setEditing(true);
     setForm(formFrom(appointment));
     setFormError(null);
-    setNotice(null);
     setConfirmingCancel(false);
   }
 
@@ -274,7 +265,7 @@ export function MyAppointmentsView() {
       setEditing(false);
       setForm(null);
       setSlotState(null);
-      setNotice(
+      toast.success(
         changes.date || changes.time
           ? `Appointment moved to ${formatDate(updated.date)} at ${formatTime(updated.time)}. A new confirmation is on its way.`
           : "Your appointment details were updated.",
@@ -295,7 +286,7 @@ export function MyAppointmentsView() {
       setConfirmingCancel(false);
       setEditing(false);
       setForm(null);
-      setNotice("Your appointment was cancelled and the slot is now free.");
+      toast.success("Your appointment was cancelled and the slot is now free.");
     } catch (cause) {
       setFormError(errorMessage(cause));
     } finally {
@@ -306,11 +297,10 @@ export function MyAppointmentsView() {
   function refresh() {
     setAppointments(null);
     setLoadError(null);
-    setNotice(null);
     setReloadKey((value) => value + 1);
   }
 
-const filterCounts: Record<FilterKey, number> = {
+  const filterCounts: Record<FilterKey, number> = {
     upcoming: upcomingCount,
     past: sorted.filter(
       (appointment) => appointment.status !== "cancelled" && appointment.date < today,
@@ -337,10 +327,7 @@ const filterCounts: Record<FilterKey, number> = {
             >
               Refresh
             </Button>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-brand-700"
-            >
+            <Link href="/" className={buttonClass("primary", "sm")}>
               Book a new visit
             </Link>
           </>
@@ -384,22 +371,12 @@ const filterCounts: Record<FilterKey, number> = {
         </Alert>
       )}
 
-      {notice && (
-        <Alert tone="success" className="mt-5">
-          {notice}
-        </Alert>
-      )}
-
       {selected && (
         <Card
           className="mt-5"
           title={editing ? "Edit appointment" : formatDate(selected.date)}
           subtitle={doctorName(selected)}
-          action={
-            <Badge tone={statusTone(selected.status)}>
-              {STATUS_LABELS[selected.status] ?? selected.status}
-            </Badge>
-          }
+          action={<StatusBadge status={selected.status} />}
         >
           {formError && (
             <Alert tone="danger" className="mb-3">
@@ -411,7 +388,7 @@ const filterCounts: Record<FilterKey, number> = {
             <>
               <dl className="grid gap-4 text-sm sm:grid-cols-2">
                 <div>
-                  <dt className="text-xs text-muted">Date &amp; time</dt>
+                  <dt className="text-xs text-muted">Date & time</dt>
                   <dd className="mt-0.5 font-medium">
                     {formatDate(selected.date)} · {formatTime(selected.time)}
                   </dd>
@@ -444,30 +421,6 @@ const filterCounts: Record<FilterKey, number> = {
                 <Alert tone="info" className="mt-4">
                   This visit was cancelled. Book a new appointment whenever you are ready.
                 </Alert>
-              ) : confirmingCancel ? (
-                <div className="mt-4 rounded-xl border border-red-200 bg-red-50/60 p-3 dark:border-red-900 dark:bg-red-950/30">
-                  <p className="text-xs text-red-700 dark:text-red-300">
-                    Cancel this appointment? The slot will be released for other patients.
-                  </p>
-                  <div className="mt-2.5 flex flex-wrap gap-2">
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      loading={cancelling}
-                      onClick={() => void handleCancel(selected)}
-                    >
-                      Yes, cancel visit
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={cancelling}
-                      onClick={() => setConfirmingCancel(false)}
-                    >
-                      Keep it
-                    </Button>
-                  </div>
-                </div>
               ) : (
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Button size="sm" onClick={() => startEditing(selected)}>
@@ -566,35 +519,25 @@ const filterCounts: Record<FilterKey, number> = {
                       No slots are published for this day. Try another date.
                     </p>
                   ) : (
-                    <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                    <ul className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                       {slotState.slots.map((slot) => {
                         const value = fromApiTime(slot.time);
                         const chosen = value === form.time;
                         return (
                           <li key={slot.time}>
-                            <button
-                              type="button"
-                              disabled={!slot.available && !chosen}
-                              aria-pressed={chosen}
-                              onClick={() => setForm({ ...form, time: value })}
-                              className={cn(
-                                "w-full rounded-xl border px-3 py-2 text-xs transition",
+                            <SlotChip
+                              time={formatTime(slot.time)}
+                              note={
                                 chosen
-                                  ? "border-brand-400 bg-brand-50 text-brand-700 dark:border-brand-600 dark:bg-brand-800/30 dark:text-brand-200"
-                                  : slot.available
-                                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"
-                                    : "cursor-not-allowed border-line bg-surface-muted text-muted",
-                              )}
-                            >
-                              <span className="font-medium">{formatTime(slot.time)}</span>
-                              <span className="mt-0.5 block text-[11px]">
-                                {chosen
                                   ? "current"
                                   : slot.available
                                     ? "open"
-                                    : reasonLabel(slot.reason)}
-                              </span>
-                            </button>
+                                    : reasonLabel(slot.reason)
+                              }
+                              state={chosen ? "selected" : slot.available ? "open" : "unavailable"}
+                              disabled={!slot.available && !chosen}
+                              onClick={() => setForm({ ...form, time: value })}
+                            />
                           </li>
                         );
                       })}
@@ -624,25 +567,16 @@ const filterCounts: Record<FilterKey, number> = {
             : `${visible.length} of ${sorted.length} appointment${sorted.length === 1 ? "" : "s"}`
         }
         action={
-          <div className="flex flex-wrap gap-1.5">
-            {FILTERS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                aria-pressed={filter === option.key}
-                onClick={() => setFilter(option.key)}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                  filter === option.key
-                    ? "border-brand-300 bg-brand-50 text-brand-700 dark:border-brand-700 dark:bg-brand-800/30 dark:text-brand-200"
-                    : "border-line bg-surface text-muted hover:bg-surface-muted hover:text-foreground",
-                )}
-              >
-                {option.label}
-                <span className="ml-1 text-muted">{filterCounts[option.key]}</span>
-              </button>
-            ))}
-          </div>
+          <FilterChips
+            label="Filter visits"
+            options={FILTERS.map((option) => ({
+              value: option.key,
+              label: option.label,
+              count: filterCounts[option.key],
+            }))}
+            value={filter}
+            onChange={(value) => setFilter(value as FilterKey)}
+          />
         }
       >
         {appointments === null && <LoadingBlock label="Loading your appointments…" />}
@@ -676,7 +610,7 @@ const filterCounts: Record<FilterKey, number> = {
                     aria-expanded={isSelected}
                     onClick={() => selectAppointment(appointment)}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition",
+                      "flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left transition touch-target",
                       isSelected
                         ? "border-brand-300 bg-brand-50/60 dark:border-brand-700 dark:bg-brand-800/20"
                         : "border-line bg-surface hover:bg-surface-muted",
@@ -688,9 +622,7 @@ const filterCounts: Record<FilterKey, number> = {
                         <span className="truncate text-sm font-medium">
                           {appointment.patient_name}
                         </span>
-                        <Badge tone={statusTone(appointment.status)}>
-                          {STATUS_LABELS[appointment.status] ?? appointment.status}
-                        </Badge>
+                        <StatusBadge status={appointment.status} />
                       </span>
                       <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
                         <span className="inline-flex items-center gap-1">
@@ -720,6 +652,17 @@ const filterCounts: Record<FilterKey, number> = {
           </ul>
         )}
       </Card>
+
+      <ConfirmDialog
+        open={confirmingCancel}
+        title="Cancel this visit?"
+        message="The slot will be released for other patients. You can book a new appointment whenever you like."
+        confirmLabel="Yes, cancel visit"
+        cancelLabel="Keep it"
+        busy={cancelling}
+        onConfirm={() => selected && void handleCancel(selected)}
+        onClose={() => setConfirmingCancel(false)}
+      />
     </main>
   );
 }
